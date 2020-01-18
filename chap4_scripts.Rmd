@@ -1,0 +1,13 @@
+---
+title: "Chapter 4"
+author: "Matt Russell"
+date: "8/18/2019"
+output: html_document
+---
+
+```{r}
+#1. See @rstudiotips
+
+#2. See rstuiolangcodediag
+
+```

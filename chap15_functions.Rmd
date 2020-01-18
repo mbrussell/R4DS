@@ -1,0 +1,250 @@
+---
+title: "Ch 15 functions"
+author: "Matt Russell"
+date: "1/3/2020"
+output: html_document
+---
+
+# When should you write a function?
+```{r}
+rescale01 <- function(x){
+  rng <- range(x, na.rm=T)
+  (x - rng[1]) / (rng[2] - rng[1])
+}
+
+rescale01(c(-54, 55, 255))
+```
+
+# Exercises
+```{r}
+# 1. If na.rm = F and there is an NA value, applying the function to x results in all NA values.
+
+x <- c(1:5, NA)
+rescale01 <- function(x){
+  rng <- range(x, na.rm=F)
+  (x - rng[1]) / (rng[2] - rng[1])
+}
+rescale01(x)
+
+# 2. Rewrote rescale() so that -Inf == 0 and Inf == 1 
+x <- c(-Inf,1:5,Inf)
+
+rescale01 <- function(x){
+  rng <- range(x, na.rm=T, finite=T)
+  y <- (x - rng[1]) / (rng[2] - rng[1])
+  y[y == -Inf] <- 0
+  y[y == Inf] <- 1
+  y
+}
+
+rescale01(x)
+
+# 3.
+
+# This code calculates the proportion of NA values in a vector.
+x<-c(33,35,37,NA)
+
+prop.na<- function(x){
+  x<-mean(is.na(x))
+  x
+}
+prop.na(x)
+
+# This code calculates the 0,1 proportion of each value in x
+x<-c(0,1,37, NA, NA)
+
+prop.na<- function(x){
+  x<- x / sum(x, na.rm=T)
+  x
+}
+prop.na(x)
+
+# This code calculates the CV of x
+x<-c(33,35,37, NA, NA)
+
+cv<- function(x){
+  x <- sd(x, na.rm=T) / mean(x, na.rm=T)
+  x
+}
+cv(x)
+
+# 4. 
+x<-c(33,35,37)
+
+var2<- function(x){
+  v<- var(x)
+  v
+}
+var2(x)
+
+x<-c(33,35,389)
+skewness <- function(x) {
+    n <- length(x)
+    v <- var(x)
+    m <- mean(x)
+    third.moment <- (1/(n - 2)) * sum((x - m)^3)
+    third.moment/(var(x)^(3/2))
+}
+
+skewness(x) 
+
+# 5. 
+
+x<-c(33,NA,NA)
+y<-c(34,NA,87)
+both_na<-function(x,y){
+  sum(is.na(x) & is.na(y))
+}
+both_na(x,y)
+
+# 6.  The function is_directory() checks whether the path in x is a directory. The function is_readable() checks whether the path in x is readable, meaning that the file exists and the user has permission to open it. These functions are useful even though they are short because their names make it much clearer what the code is doing.
+
+is_directory <- function(x) file.info(x)$isdir
+is_directory("C://Users")
+is_directory("F://")
+
+is_readable <- function(x) file.access(x, 4) == 0
+is_readable("C://Users")
+
+# 7. Lyrics to little bunny foo foo: https://en.wikipedia.org/wiki/Little_Bunny_Foo_Foo
+```
+
+# Exercises
+
+```{r}
+# 1.
+
+# This function tests whether each element of the character vector nchar starts with the string prefix. A better name is has_prefix().
+f1 <- function(string, prefix) {
+  substr(string, 1, nchar(prefix)) == prefix
+}
+
+# This function drops the last element of the vector x. A better name is drop_last().
+f2 <- function(x) {
+  if (length(x) <= 1) return(NULL)
+  x[-length(x)]
+}
+
+# This function repeats y once for each element of x. A bettername is reuse().
+
+f3 <- function(x, y) {
+  rep(y, length.out = length(x))
+}
+
+# 2. 
+cv<- function(x){
+  x <- sd(x, na.rm=T) / mean(x, na.rm=T)
+  x
+}
+
+# This function could be renamed calc_cv().
+
+# 3.  rnorm() samples from the univariate normal distribution, while MASS::mvrnorm() samples from the multivariate normal distribution. 
+?rnorm
+?MASS::mvrnorm
+
+rnorm(5, mean = 0, sd = 1)
+MASS::mvrnorm(5, 0, 1)
+
+# 4. 
+# If named norm_r() and norm_d(), the naming convention groups functions by their distribution. If named rnorm(), and dnorm(), the naming convention groups functions by the action they perform.
+
+```
+
+# Exercises
+```{r}
+# 1. if() separates the condition and else into two parts, while ifelse() is handled on one line.
+?`if`
+?ifelse
+
+# 2.
+library(lubridate)
+
+now()
+
+greet <- function(time = lubridate::now()) {
+  hr <- lubridate::hour(time)
+  if (hr < 12) {
+    print("good morning")
+  } else if (hr < 17) {
+    print("good afternoon")
+  } else {
+    print("good evening")
+  }
+}
+greet()
+
+# 3.
+fizzbuzz <- function(x) {
+  # these two lines check that x is a valid input
+  stopifnot(length(x) == 1)
+  stopifnot(is.numeric(x))
+  if (!(x %% 3) && !(x %% 5)) {
+    "fizzbuzz"
+  } else if (!(x %% 3)) {
+    "fizz"
+  } else if (!(x %% 5)) {
+    "buzz"
+  } else {
+    # ensure that the function returns a character vector
+    as.character(x)
+  }
+}
+fizzbuzz(15)
+fizzbuzz(3)
+fizzbuzz(5)
+
+# 4.
+if (temp <= 0) {
+  "freezing"
+} else if (temp <= 10) {
+  "cold"
+} else if (temp <= 20) {
+  "cool"
+} else if (temp <= 30) {
+  "warm"
+} else {
+  "hot"
+}
+# 5. switch() returns the nth argument of a list.
+switch(1, "apple", "banana", "cantaloupe")
+
+# 6.
+x <- "e"
+switch(x,
+  a = ,
+  b = "ab",
+  c = ,
+  d = "cd"
+)
+```
+
+
+# Exercises
+
+```{r}
+# 1.
+commas <- function(...) {
+  str_c(..., collapse = ", ")
+}
+commas(letters, collapse = '-')
+
+
+# 2.
+rule <- function(..., pad = "-") {
+  title <- paste0(...)
+  width <- getOption("width") - nchar(title) - 5
+  cat(title, " ", str_dup(pad, width), "\n", sep = "")
+}
+
+# 3.The trim argument specifies the fraction (0 to 0.5) of observations to be trimmed from each end of x before the mean is computed. Values of trim outside that range are taken as the nearest endpoint.
+?mean
+x<-runif(10)
+mean(x)
+mean(x,trim=0.3)
+
+# 4. method specifies a character string indicating which correlation coefficient (or covariance) is to be computed. Default is Pearson
+?cor
+```
+
+

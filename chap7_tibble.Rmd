@@ -1,0 +1,126 @@
+---
+title: "Ch 7 tibbles"
+author: "Matt Russell"
+date: "1/2/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+```
+
+## Creating tibbles
+
+```{r}
+as_tibble(iris)
+
+tibble(
+  x = 1:5,
+  y = 1,
+  z = x^2+y
+)
+
+tb <- tibble(
+  `:)` = "smile", 
+  ` ` = "space",
+  `2000` = "number"
+)
+tb
+
+# A tribble is a transformed tibble
+
+tribble(
+  ~x, ~y, ~z,
+  #--|--|----
+  "a", 2, 3.6,
+  "b", 1, 8.5
+)
+```
+
+# tibbles vs data frames
+
+```{r}
+tibble(
+  a = lubridate::now() + runif(1e3) * 86400,
+  b = lubridate::today() + runif(1e3) * 30,
+  c = 1:1e3,
+  d = runif(1e3),
+  e = sample(letters, 1e3, replace = TRUE)
+)
+
+nycflights13::flights %>% 
+  print(n = 10, width = Inf)
+
+nycflights13::flights %>% 
+  View()
+```
+
+## Subsetting
+```{r}
+df <- tibble(
+  x = runif(5),
+  y = rnorm(5)
+)
+
+# Pull out a single variable from a tibble
+df$x
+df[["x"]]
+df[[1]]
+
+# Or, use a pipe:
+df %>% .$x
+df %>% .[["x"]]
+```
+
+## Interacting with older code
+```{r}
+class(as.data.frame(tb))
+```
+
+## Exercises
+```{r}
+# 1. mtcars is a data frame because when we print it, it prints all rows of data. After changing it to a tibble, it only prints the first 10 rows of data
+mtcars 
+
+as_tibble(mtcars)
+
+# 2.
+df <- data.frame(abc = 1, xyz = "a")
+df$x
+df[, "xyz"]
+df[, c("abc", "xyz")]
+
+# 3. You can use the double bracket, like df[[var]].
+
+
+# 4.
+
+annoying <- tibble(
+  `1` = 1:10,
+  `2` = `1` * 2 + rnorm(length(`1`))
+)
+# 4.1
+annoying[["1"]]
+
+# 4.2
+ggplot(annoying, aes(x = `1`, y = `2`)) +
+  geom_point()
+
+# 4.3
+annoying<-mutate(annoying, `3` = `2` / `1`)
+
+# 4.4
+annoying <- rename(annoying, one = `1`, two = `2`, three = `3`)
+annoying
+
+# 5. The function tibble::enframe() converts named vectors to a data frame with names and values
+enframe(c(a = 1, b = 2, c = 3))
+
+# 6.Try ?print.tbl. The n_extra argument determines the number of extra columns to print information for.
+
+?print.tbl
+
+```
+
+
+

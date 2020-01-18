@@ -1,0 +1,318 @@
+---
+title: "chapter 5"
+author: "Matt Russell"
+date: "8/23/2019"
+output: html_document
+---
+
+
+Exercises
+```{r}
+library(tidyverse)
+diamonds
+#1. 
+
+diamonds %>%
+  ggplot(mapping = aes(x=x))+
+  geom_histogram()
+
+diamonds %>%
+  ggplot(mapping = aes(x=y))+
+  geom_histogram()
+
+diamonds %>%
+  ggplot(mapping = aes(x=z))+
+  geom_histogram()
+
+diamonds %>%
+  count(cut_width(x,0.5))
+
+diamonds %>%
+  count(cut_width(y,0.5))
+
+diamonds %>%
+  count(cut_width(z,0.5))
+
+# x is distibuted with a mound shape (normally distributed). y and x are more taild distributions. x is length (some variability but mostly normal), y is width (only a few long diamonds but most are short), and z is depth (only a few high-depthed ones)
+
+#2.
+diamonds %>%
+  ggplot(mapping = aes(x=price))+
+  geom_histogram(binwidth = 1000)
+
+diamonds %>%
+  ggplot(mapping = aes(x=price))+
+  geom_histogram(binwidth = 100)
+diamonds %>%
+  ggplot(mapping = aes(x=price))+
+  geom_histogram(binwidth = 100)+
+  xlim(0,2000)
+
+diamonds %>%
+  count(cut_width(price,1000))
+# Reverse J-shaped indicates there are a lot of "cheap" diamonds, few expensive ones.
+
+# There's a "bump" just before $5,000. Maybe people only spend up to that amount or diamonds are priced commonly up to $5,000? 
+
+# There's a "dip" at the $1,500 mark.
+
+# 3.
+diamonds %>%
+  ggplot(mapping = aes(x=carat))+
+  geom_histogram()+
+    xlim(0.9,1.1)
+
+diamonds %>%
+  filter(carat >=0.99 & carat <=1)%>%
+  count(carat)
+
+  
+# Few carats are 0.99 (n=23). Lots are 1.0 (n=1558). People want to but a full carat!
+  
+#4. 
+diamonds %>%
+  ggplot(mapping = aes(x=price))+
+  geom_histogram(binwidth = 100)
+
+diamonds %>%
+  ggplot(mapping = aes(x=price))+
+  geom_histogram(binwidth = 100)+
+  xlim(1000,2000)
+diamonds %>%
+  ggplot(mapping = aes(x=price))+
+  geom_histogram(binwidth = 100)+
+  coord_cartesian(xlim=c(1000,2000))
+
+#It looks like coord_cartesian() adds more categories on the ends. The scale of the y-axis is larger for coord_cartesian() than for xlim(). Any values outside the x- and y-limits are dropped before calculating bin widths and counts. 
+
+```
+
+Exercises
+```{r}
+#1. 
+diamonds2<- diamonds %>%
+  mutate(y = ifelse(y < 4 | y > 20, NA, y),
+         color = ifelse(color %in% c("I"), NA, color))
+diamonds2 %>%
+  summarize(mean.y = mean(y))
+
+ggplot(diamonds2)+
+  geom_histogram(aes(y), binwidth=0.5)
+
+ggplot(diamonds2)+
+  geom_bar(aes(color))
+
+#They show up in the bar chart not the histogram.
+
+#2.
+diamonds2 %>%
+  summarize(mean.y = mean(y))
+diamonds2 %>%
+  summarize(mean.y = mean(y, na.rm=T))
+
+#na.rm=T removes the na values and calculates the mean.
+```
+
+```{r}
+library(nycflights13)
+flights
+nycflights13::flights %>%
+  mutate(
+    cancelled = is.na(dep_time),
+    sched_hour = sched_dep_time %/% 100,
+    sched_min = sched_dep_time %% 100,
+    sched_dep_time = sched_hour + sched_min /60
+  ) %>%
+  ggplot(aes(sched_dep_time))+
+  geom_freqpoly(aes(color=cancelled), binwidth=1/4
+  )
+
+flights2<-flights %>%
+  mutate(
+    cancelled = is.na(dep_time)
+  ) %>%
+  ggplot(aes(cancelled))+
+  geom_bar(aes(cancelled)
+  )
+
+flights2<-flights %>%
+  mutate(
+    cancelled = is.na(dep_time),
+        sched_hour = sched_dep_time %/% 100,
+    sched_min = sched_dep_time %% 100,
+    sched_dep_time = sched_hour + sched_min /60
+  )
+
+flights2 %>%
+  count(cancelled)
+
+flights2 %>%
+    ggplot(aes(sched_dep_time, ..density..))+
+  geom_freqpoly(aes(color=cancelled), binwidth=1/2
+  )
+
+flights2 %>%
+  ggplot(aes(cancelled, sched_dep_time))+
+  geom_boxplot(aes(color=cancelled)  )
+#Look at number of flights cancelled, make a boxplot, make a density plot
+
+#2. 
+ggplot(diamonds, aes(carat, price))+geom_point()
+ggplot(diamonds, aes(depth, price))+geom_point()
+ggplot(diamonds, aes(table, price))+geom_point()
+ggplot(diamonds, aes(x, price))+geom_point()
+ggplot(diamonds, aes(y, price))+geom_point()
+ggplot(diamonds, aes(z, price))+geom_point()
+
+# x and carat seem like useful predictor variables that predict price
+
+ggplot(diamonds, aes(cut,price))+geom_boxplot()
+ggplot(diamonds, aes(color,price))+geom_boxplot()
+ggplot(diamonds, aes(clarity,price))+geom_boxplot()
+
+#3.
+
+#install.packages("ggstance")
+#library(ggstance)
+
+#can't load ggstance on 24 Aug 2019
+
+#4. 
+install.packages("lvplot")
+#library(lvplot)
+
+#can't load lvplot on 24 Aug 2019
+
+#5. 
+library(nycflights13)
+flights2<-flights %>%
+  mutate(
+    cancelled = is.na(dep_time),
+    sched_hour = sched_dep_time %/% 100,
+    sched_min = sched_dep_time %% 100,
+    sched_dep_time = sched_hour + sched_min /60
+  )
+
+# line graph
+flights2 %>%
+    ggplot(aes(sched_dep_time))+
+  geom_freqpoly(aes(color=cancelled), binwidth=1/2
+  )
+
+flights2 %>%
+    ggplot(aes(sched_dep_time, ..density..))+
+  geom_freqpoly(aes(color=cancelled), binwidth=1/2
+  )
+
+# facetted histogram
+flights2 %>%
+  ggplot(aes(sched_dep_time))+
+  geom_histogram(binwidth=1/2)+
+  facet_grid(~cancelled)
+
+# violin plot
+flights2 %>%
+  ggplot(aes(cancelled,sched_dep_time))+
+  geom_violin()
+
+# Can see distribution at a higher resolution within the violin plots. Histogram (by default) takes the y-axis scale of the largest values. 
+
+#6.
+
+#install.packages("ggbeeswarm")
+#library(ggbeeswarm)
+
+#can't load ggbeeswarm on 24 Aug 2019
+
+```
+
+```{r}
+#1. 
+diamonds2 <- diamonds %>%
+  count(color, cut)
+
+diamonds3<-diamonds2 %>%
+  group_by(color) %>%
+  summarize(sum.color = sum(n))
+
+diamonds4<-merge(diamonds2, diamonds3, by = "color")
+
+diamonds4 %>%
+  mutate(prop.color = n / sum.color) %>%
+  ggplot(aes(cut,prop.color))+
+  geom_bar(stat="identity")+
+  facet_grid(~color)+
+  coord_flip()
+
+#2. 
+
+flights2<-flights %>%
+  group_by(dest,month) %>%
+  summarize(n.flights = n(),
+            mean_dep_delay = mean(dep_delay)) %>%
+  filter(n.flights >= 1000) %>%
+  ggplot(aes(factor(month),dest,fill=mean_dep_delay))+
+  geom_tile()
+flights2
+
+#There are a lot of destinations which makes it difficult to read. You could select only the most common destinations with filter().
+
+#3. 
+
+diamonds %>%
+  count(color, cut)%>%
+  ggplot(aes(x=color, y=cut))+
+  geom_tile(aes(fill=n))
+
+diamonds %>%
+  count(color, cut)%>%
+  ggplot(aes(x=cut, y=color))+
+  geom_tile(aes(fill=n))
+
+#It’s usually better to use the categorical variable with a larger number of categories or the longer labels on the y axis. 
+
+```
+
+Exercises
+```{r}
+#1. 
+ggplot(diamonds,aes(x=price, color = cut_width(carat, 1, boundary = 0)))+
+  geom_freqpoly()
+
+ggplot(diamonds,aes(x=price, color = cut_number(carat,5)))+
+  geom_freqpoly()
+
+#Can better see the cut_number graph compared to cut_width.
+
+#2. 
+ggplot(diamonds,aes(x=carat, color = cut_number(price,4)))+
+  geom_freqpoly()
+
+ggplot(diamonds,aes(x= cut_number(price,10), y=carat))+
+  geom_boxplot()+
+  coord_flip()+
+  labs(x="Price")
+
+diamonds %>%
+  filter(price < 646 | price >9820) %>%
+  mutate(size = ifelse(price < 646, "Smaller", "Larger")) %>%
+  ggplot(aes(x= cut_number(price,10), y=carat))+
+    geom_boxplot()+
+  facet_grid(~size,scales="free")+
+  coord_flip()+
+  labs(x="Price")
+
+#For the same price for highly priced rings, there is a lot of variability in carat size. Distribution of lower priced rings is less. This is somewhat surprising.
+
+#4.
+diamonds %>%
+  ggplot(aes(carat, price))+
+  geom_point()+
+  facet_grid(~cut)
+
+ggplot(diamonds, aes(colour = cut_number(carat, 5), y = price, x = cut)) +
+  geom_boxplot()+
+  labs(colour="Carat")
+
+#5. You can a better sense of the two values of each variable in case of a scatter plot. A boxplot only shows one variable
+```

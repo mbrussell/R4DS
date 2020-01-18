@@ -1,0 +1,262 @@
+---
+title: "Chapter 9"
+author: "Matt Russell"
+date: "9/14/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#Tidy data
+
+```{r}
+library(tidyverse)
+table1
+table2
+table3
+table4a
+table4b
+
+#compute rate per 10,000
+table1 %>%
+  mutate(rate = (cases/population) * 10000)
+
+#count cases per year
+table1 %>%
+  count(year,wt=cases)
+
+#Look at changes over time
+
+table1 %>%
+  ggplot(aes(year,cases,color=country))+
+  geom_point()+
+  geom_line()
+
+```
+#Exercises
+
+```{r}
+#1.
+# Table 1: Each country and each year are a row of data with the two values.
+# Table 2: Each country, each year, and each variable are a row in the dataset.
+# Table 3: Each country and each year are a row of data, but the two variables (cases and poulation) are combined in a single column in the dataset.
+# Table 4a: Each country is a row in the dataset and the columns are year. Only the number of cases are shown. The population of the country is not shown.
+# Table 4b: Each country is a row in the dataset and the columns are year. Only the population is shown. The number of cases in the country is not shown.
+
+#2. 
+table2.cases<- table2 %>%
+  filter(type == "cases") %>%
+  rename(cases = count) %>%
+  select (-type)
+
+table2.pop<- table2 %>%
+  filter(type == "population")%>%
+  rename(pop = count) %>%
+  select (-type)
+
+table2.new<-left_join(table2.cases,table2.pop)
+table2.new %>%
+  mutate(rate = (cases/pop) * 10000)
+
+table4c <-
+  tibble(
+  country = table4a$country,
+  `1999` = table4a[["1999"]]/table4b[["1999"]],
+  `2000` = table4a[["2000"]]/table4b[["2000"]]
+)
+table4c
+
+# Neither data set is easy to work with!
+
+#3.
+table2 %>%
+  filter(type == "cases") %>%
+  ggplot(aes(year,count,color=country))+
+  geom_point()+
+  geom_line()
+# First, you need to filter to obtain only the number of TB cases.
+
+```
+
+```{r}
+# Gather (wide to long)
+table4a %>%
+  gather(`1999`,`2000`, key="year", value="cases")
+
+# Spread (long to wide)
+table2 %>%
+  spread(key=type, value = count)
+```
+
+Exercises
+```{r}
+# 1. Year turns into a character variable after it is spread. convert	= If TRUE will automatically run type.convert() on the key column.
+
+stocks <- tibble(
+  year = c(2015, 2015, 2016, 2016),
+  half = c(1, 2, 1, 2),
+  return = c(1.88, 0.59, 0.92, 0.17)
+)
+
+stocks %>%
+  spread(year, return) %>%
+  gather(`2015`:`2016`, key = "year", value = "return")
+
+stocks %>%
+  spread(year, return) %>%
+  gather(`2015`:`2016`, key = "year", value = "return", convert = T)
+
+#2. The code fails because there are no backticks on the numeric variable names.
+table4a %>%
+  gather(1999, 2000, key = "year", value = "cases")
+
+table4a %>%
+  gather(`1999`, `2000`, key = "year", value = "cases")
+
+#3. Keys are shared for rows 1 and 3. We can add an observation with the row_number, grouped by the name and key.
+
+people <- tribble(
+  ~name, ~key, ~value,
+  #-----------------|--------|------
+  "Phillip Woods", "age", 45,
+  "Phillip Woods", "height", 186,
+  "Phillip Woods", "age", 50,
+  "Jessica Cordero", "age", 37,
+  "Jessica Cordero", "height", 156
+)
+people
+
+# Spread (long to wide)
+people %>%
+  spread(key=key, value = value)
+
+
+people2 <- people %>%
+  group_by(name,key) %>%
+  mutate(obs=row_number())
+
+# Spread (long to wide)
+people2 %>%
+  spread(key=key, value = value)
+
+#4. The variables are pregnancy (yes/no), sex, and number of males/females. We can gather it.
+preg <- tribble(
+  ~pregnant, ~male, ~female,
+  "yes", NA, 10,
+  "no", 20, 12
+)
+preg
+
+preg %>%
+  gather(male,female,key="sex",value="number")
+
+```
+
+# Exercises
+```{r}
+# 1. extra controls what happens if there are too many pieces. By default it gives you a warning and drops extra values.
+
+# fill controls what happens when there are not enough pieces. By default it gives you a warning and fills it with NA.
+
+tibble(x = c("a,b,c", "d,e,f,g", "h,i,j")) %>%
+  separate(x, c("one", "two", "three"))
+
+tibble(x = c("a,b,c", "d,e", "f,g,i")) %>%
+  separate(x, c("one", "two", "three"))
+
+#2. The remove statement removes an input column from output data frame. We would set it to FALSE if we wanted to create a new variable, but keep the old one.
+
+#3. separate() turns a single character column into multiple columns. extract() turns each group into a new column.
+```
+
+# Exercises
+```{r}
+# 1. In spread(), missing values will be replaced with the value for fill. Note that there are two types of missingness in the input: explicit missing values (i.e. NA), and implicit missings, rows that simply aren't present. Both types of missing value will be replaced by fill.
+
+# In complete(), fill identifys a named list that for each variable supplies a single value to use instead of NA for missing combinations.
+
+# 2. The direction argument in fill specifies the direction to fill missing values. Default is "down", can also be "up".
+
+```
+
+# Case study
+```{r}
+who
+
+who1<-who %>%
+  gather(new_sp_m014:newrel_f65, key="key",value = "cases", na.rm=T)
+who1
+
+who1 %>%
+  count(key)
+
+who2<-who1 %>%
+  mutate(key=stringr::str_replace(key, "newrel", "new_rel"))
+who2
+
+who3 <- who2 %>%
+  separate(key, c("new", "type", "sexage"), sep="_")
+who3
+
+who3 %>%
+  count(new)
+
+who4 <- who3 %>%
+  select(-new,-iso2,-iso3)
+
+who5 <- who4 %>%
+  separate(sexage, c("sex", "age"), sep = 1)
+who5
+
+# all in a complex pipe:
+who %>%
+  gather(new_sp_m014:newrel_f65, key="key",value = "cases", na.rm=T) %>%
+    mutate(key=stringr::str_replace(key, "newrel", "new_rel")) %>%
+    separate(key, c("new", "type", "sexage"), sep="_") %>% 
+    select(-new,-iso2,-iso3) %>% 
+   separate(sexage, c("sex", "age"), sep = 1)
+
+```
+
+# Exercises
+```{r}
+#1. In the data it appears that 0 is used to represent no cases of TB. Explicit missing values (NAs) are used to represent missing data for (country, year) combinations in which the country existed in that year. Implicit missing values are used to represent missing data because a country did not exist in that year.
+who %>%
+  gather(new_sp_m014:newrel_f65, key="key",value = "cases") %>%
+    mutate(key=stringr::str_replace(key, "newrel", "new_rel")) %>%
+    separate(key, c("new", "type", "sexage"), sep="_") %>% 
+    select(-new,-iso2,-iso3) %>% 
+   separate(sexage, c("sex", "age"), sep = 1)
+
+#2. You get an error message stating that it's expecting 3 pieces.
+
+who %>%
+  gather(new_sp_m014:newrel_f65, key="key",value = "cases", na.rm=T) %>%
+    #mutate(key=stringr::str_replace(key, "newrel", "new_rel")) %>%
+    separate(key, c("new", "type", "sexage"), sep="_") %>% 
+    select(-new,-iso2,-iso3) %>% 
+   separate(sexage, c("sex", "age"), sep = 1)
+
+#3. If iso2 and iso3 are redundant with country, then, within each country, there should only be one distinct combination of iso2 and iso3 values, which is the case.
+
+select(who3, country, iso2, iso3) %>%
+  distinct() %>%
+  group_by(country) %>%
+  filter(n() > 1)
+
+who %>% 
+  count(country)
+
+#4.
+who5 %>% 
+  group_by(country, year, sex) %>% 
+  summarize(num_cases = sum(cases)) %>% 
+  filter(year>=1995) %>% 
+  unite(country_sex, country, sex, remove = FALSE) %>%
+  ggplot(aes(year,num_cases,group=country_sex,color=sex))+
+  geom_line()
+
+```
+

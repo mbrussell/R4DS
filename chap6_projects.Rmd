@@ -1,0 +1,21 @@
+---
+title: "Chapter 6"
+author: "Matt Russell"
+date: "8/24/2019"
+output: html_document
+---
+
+```{r}
+getwd()
+```
+
+```{r}
+library(tidyverse)
+
+ggplot(diamonds, aes(carat,price))+
+  geom_point()
+
+ggsave('diamonds.pdf')
+write_csv(diamonds, "diamonds.csv")
+
+```

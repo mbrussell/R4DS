@@ -1,0 +1,153 @@
+---
+title: "Chapter 8"
+author: "Matt Russell"
+date: "9/1/2019"
+output: html_document
+---
+
+#The readr package
+
+```{r setup, include=FALSE}
+library(tidyverse)
+hts <- read_csv("C:/Users/russellm/Documents/Classes/UMN/NR 5021/Data/cherry.csv")
+
+read_csv("a,b,c
+         1,2,3
+         9,8,7")
+
+read_csv("this is
+my data
+a,b,c
+         1,2,3
+         9,8,7", skip = 2)
+
+read_csv("1,2,3
+         9,8,7", col_names = F)
+
+read_csv("1,2,3
+         9,8,7", col_names = c("a", "b", "c"))
+
+read_csv("a,b,c
+         1,2,3
+         9,.,7", na=".")
+```
+
+## Exercises
+
+```{r}
+#1. You could use read_delim().
+read_delim("a|b|c
+         1|2|3
+         9|8|7", delim="|")
+
+#2. 
+?read_csv
+?read_tsv
+#Theses two functions also hace n_max (maximum number of records to read), trim_ws (trim the leading and trailing whitespace.)
+
+#3.
+?read_fwf
+#In read_fwf() you need to specify the length of every field through col_positions=. 
+
+#4. 
+x<-("x,y\n1,'a,b'")
+read_csv(x)
+read_csv(x, quote="'")
+
+#5.
+read_csv("a,b\n1,2,3\n4,5,6")
+#New lines are out of place
+
+read_csv("a,b\n1,2,\n3,4,\n5,6")
+
+
+read_csv("a,b,c\n1,2\n1,2,3,4")
+#NA values on last cell of first row, last cell (4) is dropped
+
+read_csv("a,b\n\"1")
+#NA values on last cell of first row
+
+read_csv("a,b\n1,2\na,b")
+# a and b are header names and values
+
+read_csv("a;b\n1;3")
+#read csv doesn;t separate values. Used read_csv2:
+read_csv2("a;b\n1;3")
+
+
+parse_number("$123")
+parse_number("30%")
+parse_number("$1.234.333", locale=locale(grouping_mark = '.'))
+
+parse_date("10/06/20", "%m/%d/%y")
+parse_date("6/10/20", "%d/%m/%y")
+parse_date("10/06/20", "%y/%m/%d")
+
+```
+
+#Exercises
+```{r}
+#1.
+?locale
+#The date_names= and grouping_mark= arguments might be the most important for the locale() function.
+
+#2. 
+locale(decimal_mark = ".", grouping_mark = ".")
+
+#It says they have to be different. If the decimal_mark is set to the comma ",", then the grouping mark is set to the period ".". If the grouping mark is set to a period, then the decimal mark is set to a comma.
+
+#3. These functions provide default date and time formats. 
+
+parse_date("6 Octubre 1983", "%d %B %Y", locale = locale("es"))
+parse_date("6 janvier 1983", "%d %B %Y", locale = locale("fr"))
+
+#4. 
+parse_date("02/01/2006")
+au_locale <- locale(date_format = "%d/%m/%Y")
+parse_date("02/01/2006", locale = au_locale)
+parse_date("02/01/2006", "%d/%m/%Y")
+
+#5. 
+#The function read_csv() uses a comma, while read_csv2() uses a semi-colon (;). Using a semi-colon is useful when commas are used as the decimal point (as in Europe).
+
+#6. 
+#UTF is the standard encoding.
+d1 <- "January 1, 2010"
+parse_date(d1, "%B %d, %Y")
+d2 <- "2015-Mar-07"
+parse_date(d2, "%Y-%b-%d")
+d3 <- "06-Jun-2017"
+parse_date(d3, "%d-%b-%Y")
+d4 <- c("August 19 (2015)", "July 1 (2015)")
+parse_date(d4, "%B %d (%Y)")
+d5 <- "12/30/14" # Dec 30, 2014
+parse_date(d5, "%m/%d/%y")
+t1 <- "1705"
+parse_time(t1, "%H%M")
+t2 <- "11:15:10.12 PM"
+parse_time(t2, "%H:%M:%OS %p")
+```
+
+
+```{r}
+teams<- tribble(
+  ~team, ~coolness,
+  "Mets", 10,
+  "Phillies", 0
+)
+teams
+write_csv(teams, "teams.csv")
+
+
+library(readxl)
+
+teams2<-read_excel("teams.xlsx")
+
+
+teams2<-read_excel("teams.xlsx", sheet = "al")
+
+teams2<-read_excel("teams.xlsx", sheet = 1)
+
+teams2<-read_excel("teams.xlsx", range=cell_cols("B"))
+
+```

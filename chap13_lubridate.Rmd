@@ -1,0 +1,361 @@
+---
+title: "Chapter lubridate"
+author: "Matt Russell"
+date: "12/9/2019"
+output: html_document
+---
+
+Load libraries:
+
+```{r}
+library(tidyverse)
+library(lubridate)
+library(nycflights13)
+```
+
+
+
+```{r}
+today()
+now()
+
+# ymd(), mdy(), and dmy() functions 
+ymd("2017-12-13")
+mdy("Jan 21st, 2019")
+dmy("31-Jan-2017")
+
+ymd(20171213)
+ymd_hms("2017-12-13 04:31:07")
+
+# Time zones
+ymd(20171213, tz = "UTC")
+
+# make_datetime function
+flights %>% 
+  select(year, month, day, hour, minute) %>% 
+  mutate(departure = make_datetime(year, month, day, hour, minute),
+         departure_day = make_date(year, month, day))
+
+make_datetime_100 <- function(year, month, day, time) {
+  make_datetime(year, month, day, time %/% 100, time %% 100)
+}
+
+flights_dt <- flights %>% 
+  filter(!is.na(dep_time), !is.na(arr_time)) %>% 
+  mutate(
+    dep_time = make_datetime_100(year, month, day, dep_time),
+    arr_time = make_datetime_100(year, month, day, arr_time),
+    sched_dep_time = make_datetime_100(year, month, day, sched_dep_time),
+    sched_arr_time = make_datetime_100(year, month, day, sched_arr_time)
+  ) %>% 
+  select(origin, dest, ends_with("delay"), ends_with("time"))
+
+flights_dt 
+
+flights_dt %>% 
+  ggplot(aes(dep_time))+
+  geom_freqpoly(binwidth = 86400)
+
+flights_dt %>% 
+  filter(dep_time < ymd(20130102)) %>% 
+  ggplot(aes(dep_time)) +
+  geom_freqpoly(binwidth = 600) # 600sec = 10 min
+
+as_datetime(today())
+
+as_datetime(60*60*10)
+as_date(365*10*2)
+
+```
+
+# Exercises
+```{r}
+#1. The ymd() function indicates that it fails to parse if you try to parse a string with invalid dates.
+ymd(c("2019-12-13", "bananas"))
+
+#2. The tzone argument adjust the date depending on where you are in the world (it may not be the same day).
+today()
+today(tzone="Pacific/Auckland")
+
+#3. Parsing the following date-times:
+d1 <- "January 1, 2010"
+mdy(d1)
+
+d2 <- "2015-Mar-07"
+ymd(d2)
+
+d3 <- "06-Jun-2017"
+dmy(d3)
+
+d4 <- c("August 19 (2015)", "July 1 (2015)")
+mdy(d4)
+
+d5 <- "12/30/14" # Dec 30, 2014
+mdy(d5)
+```
+
+Date-time components
+
+```{r}
+datetime <-ymd_hms("2019-12-13 08:06:30")
+year(datetime)
+month(datetime)
+mday(datetime)
+
+yday(datetime) #the Julian date
+wday(datetime)
+
+month(datetime, label=T)
+month(datetime, label=T, abbr=F)
+
+wday(datetime, label=T)
+wday(datetime, label=T, abbr=F)
+
+flights_dt %>% 
+  mutate(wday=wday(dep_time, label = T)) %>% 
+  ggplot(aes(x=wday))+
+  geom_bar()
+
+flights_dt %>% 
+  mutate(minute = minute(dep_time)) %>% 
+  group_by(minute) %>% 
+  summarize(
+    avg_delay = mean(arr_delay, na.rm = TRUE),
+    n = n()) %>% 
+  ggplot(aes(minute, avg_delay)) +
+    geom_line()
+
+sched_dep <- flights_dt %>% 
+  mutate(minute = minute(sched_dep_time)) %>% 
+  group_by(minute) %>% 
+  summarize(
+    avg_delay = mean(arr_delay, na.rm = TRUE),
+    n = n())
+
+ggplot(sched_dep, aes(minute, avg_delay)) +
+  geom_line()
+
+ggplot(sched_dep,aes(minute, n))+
+  geom_line()
+
+flights_dt %>%
+  count(week = floor_date(dep_time,"week")) %>% 
+  ggplot(aes(week, n)) + 
+  geom_line()
+
+datetime <- ymd_hms("2016-07-08 12:34:56")
+year(datetime)<-2020
+datetime
+
+update(datetime, year = 2020, month = 2, mday = 2, hour = 2)
+
+ymd("2015-02-01") %>% 
+  update(mday = 30)
+
+ymd("2015-02-01") %>% 
+  update(hour = 400)
+
+flights_dt %>% 
+  mutate(dep_hour = update(dep_time, yday = 1)) %>% 
+  ggplot(aes(dep_hour)) +
+    geom_freqpoly(binwidth = 300)
+```
+
+
+## Exercises
+
+```{r}
+# 1. It seems that average flight times are longer in the winter months.
+flights_dt %>%
+  mutate(yday=yday(sched_dep_time)) %>%  
+  group_by(yday) %>% 
+  summarize(num_flights = n(),
+            mean_air_time = mean(air_time,na.rm = T)) %>% 
+  ggplot(aes(yday,mean_air_time))+
+  geom_line()
+
+# 2. There are several instances where departure times differ by 24 hours, e.g., they occur on the next day.
+flights_dt2 <- flights_dt %>% 
+  mutate(dep_time2 = sched_dep_time + dep_delay*60) %>% 
+  filter(dep_time2 != dep_time) %>% 
+  select(dep_time2, dep_time)
+flights_dt2
+
+# 3.There are differences, many go to the previous day.
+flights_dt %>% 
+  mutate(duration = arr_time-dep_time) %>% 
+  ggplot(aes(duration,air_time))+
+  geom_point()+
+  geom_abline(intercept = 0, slope=1)
+
+# 4. Average arrival delay increases throughtout the day. Should use sched_dep_time becacause that's where te "delay" is.
+ flights_dt %>% 
+  mutate(hour.day=hour(sched_dep_time)) %>% 
+  select(arr_delay,hour.day) %>% 
+  group_by(hour.day) %>% 
+  summarise(mean.arr.delay=mean(arr_delay, na.rm=T)) %>% 
+  ggplot(aes(hour.day,mean.arr.delay)) +
+  geom_bar(stat="identity")
+
+# 5.Avoid Mon, Thurs Fri--these are the days with the greatest average arrival delays. Saturday has the lowest average arrival delay.
+ 
+ flights_dt %>% 
+  mutate(day.week=wday(sched_dep_time, label=T)) %>% 
+  select(arr_delay,day.week) %>% 
+  group_by(day.week) %>% 
+  summarise(mean.arr.delay=mean(arr_delay, na.rm=T)) %>% 
+  ggplot(aes(day.week,mean.arr.delay)) +
+  geom_bar(stat="identity")
+ 
+  flights_dt %>% 
+  mutate(day.week=wday(sched_dep_time, label=T)) %>% 
+  select(arr_delay,day.week) %>% 
+  ggplot(aes(day.week,arr_delay)) +
+  geom_boxplot()+
+    scale_y_continuous(limits=c(-25,25))
+
+# 6.There are few large carat diamonds, just like there are few early scheduled departure times.
+diamonds %>%
+  ggplot(aes(carat))+
+    geom_freqpoly()
+    
+  flights %>% 
+    ggplot(aes(sched_dep_time))+
+    geom_freqpoly()
+  
+# In both carat and sched_dep_time there are abnormally large numbers of values are at nice “human” numbers. In sched_dep_time it is at 00 and 30 minutes. In carats, it is at 0, 1/3, 1/2, 2/3  
+
+  ggplot(diamonds, aes(x = carat %% 1 * 100)) +
+  geom_histogram(binwidth = 1)
+  
+  ggplot(flights_dt, aes(x = minute(sched_dep_time))) +
+  geom_histogram(binwidth = 1)
+
+# 7. The graph shows that the proportion of flights that are early departures is highest between minutes 20–30 and 50–60.
+  
+flights_dt %>%
+  mutate(
+    minute = minute(dep_time),
+    early = dep_delay < 0
+  ) %>%
+  group_by(minute) %>%
+  summarise(
+    early = mean(early, na.rm = TRUE),
+    n = n()
+  ) %>%
+  ggplot(aes(minute, early)) +
+  geom_line()
+  
+```
+
+
+Time spans
+```{r}
+# These are difftime objects.
+matt_age<-today()-ymd(19831016)
+matt_age
+
+as.duration(matt_age)
+
+dseconds(15)
+dminutes(15)
+dhours(10)
+ddays(0:5)
+dweeks(2)
+dyears(1)
+
+# Multiply/add time durations
+ddays(2)*3
+
+tomorrow<-today()+ddays(1)
+tomorrow
+
+last_week<-today()-dweeks(1)
+last_week
+
+one_pm <- ymd_hms("2016-03-12 13:00:00", tz = "America/New_York")
+
+one_pm
+one_pm+ddays(1)
+
+# Periods (work with "human times)
+
+one_pm
+one_pm+days(1)
+
+seconds(15)
+minutes(15)
+hours(10)
+days(0:5)
+weeks(2)
+years(1)
+
+10*(months(6)+days(1))
+days(50)+hours(4)+minutes(4)
+
+# leap years
+ymd("2020-01-01")+dyears(1)
+ymd("2020-01-01")+years(1)
+
+one_pm+ddays(1)
+one_pm+days(1)
+
+# Back to flights...
+# Some overnight flights arrive before they leave NYC
+flights_dt %>% 
+  filter(arr_time < dep_time)
+
+flights_dt <- flights_dt %>% 
+  mutate(
+    overnight = arr_time < dep_time,
+    arr_time = arr_time + days(overnight * 1),
+    sched_arr_time = sched_arr_time + days(overnight * 1)
+  )
+
+flights_dt %>% 
+  filter(overnight, arr_time < dep_time)
+
+# Intervals
+years(1)/ days(1)
+next_year <- today() + years(1)
+next_year
+
+(today() %--% next_year) / ddays(1)
+```
+
+
+```{r}
+# 1. The are no dmonths() because there are an unequal number of days in each month.
+weeks(1)
+dweeks(1)
+
+# 2. The variable overnight is equal to TRUE or FALSE. If it is an overnight flight, this becomes 1 day, and if not, then overnight = 0, and no days are added to the date.
+
+flights_dt <- flights_dt %>% 
+  mutate(
+    overnight = arr_time < dep_time,
+    days_over = days(overnight * 1),
+    arr_time = arr_time + days(overnight * 1),
+    sched_arr_time = sched_arr_time + days(overnight * 1)
+  )
+
+# 3.
+ymd("2015-01-01")+months(0:11)
+ymd("2019-01-01")+months(0:11)
+
+
+# 4.
+age <- function(bday){
+  (bday %--% today()) %/% years(1)
+}
+
+matt_age <- age(bday=ymd(19831006))
+matt_age
+
+annie_age <- age(bday=ymd(19780717))
+annie_age
+
+# 5.
+(today() %--% (today() + years(1))) / months(1)
+```
+

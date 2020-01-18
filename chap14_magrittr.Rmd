@@ -1,0 +1,61 @@
+---
+title: "Chapter 14"
+author: "Matt Russell"
+date: "12/14/2019"
+output: html_document
+---
+
+```{r}
+library(magrittr)
+library(pryr)
+```
+
+```{r}
+foo_foo <- little_bunny()
+
+# Intermediate steps (downsides: The code is cluttered with unimportant names like tree2, tree3, etc)
+
+foo_foo_1 <- hop(foo_foo, through = forest)
+foo_foo_2 <- scoop(foo_foo_1, up = field_mice)
+foo_foo_3 <- bop(foo_foo_2, on = head)
+
+diamonds <- ggplot2::diamonds
+diamonds2 <- diamonds %>% 
+  dplyr::mutate(price_per_carat = price / carat)
+
+pryr::object_size(diamonds)
+pryr::object_size(diamonds2)
+pryr::object_size(diamonds,diamonds2)
+
+diamonds$carat[1]<-NA
+pryr::object_size(diamonds)
+pryr::object_size(diamonds2)
+pryr::object_size(diamonds,diamonds2)
+
+# Overwrite the original (downsides: it's hard to debug, you'll need to run to entire pipeline from the beginning, and it's difficult to see what's changing on each line).
+
+foo_foo <- hop(foo_foo, through = forest)
+foo_foo <- scoop(foo_foo, up = field_mice)
+foo_foo <- bop(foo_foo, on = head)
+
+# Function composition (downsides: it's hard to understand how it works from th inside out)
+
+bop(
+  scoop(
+    hop(foo_foo, through = forest),
+    up = field_mice
+  ), 
+  on = head
+)
+
+# Use a pipe (Upsides: it focuses on verbs, not nouns. 
+# Downsides with pipes: Not useful when code is longer than 10 steps, not useful when combining multiple objects, not useful for really complex structures, especially with graphing.)
+
+foo_foo %>%
+  hop(through = forest) %>%
+  scoop(up = field_mice) %>%
+  bop(on = head)
+
+```
+
+

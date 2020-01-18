@@ -1,0 +1,163 @@
+---
+title: "chap16_vectors"
+author: "Matt Russell"
+date: "1/5/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+```
+
+## Vector basics
+
+```{r}
+x <- sqrt(2)^2
+x
+x-2
+near(x-2,2)
+
+sqrt(2) ^ 2 == 2
+near(sqrt(2) ^ 2, 2)
+```
+
+## Exercises
+
+```{r}
+# 1. is.finite() asks if the value is finite. !is.infinite asks if the value is not infinite.
+
+x <- sqrt(2)^2
+is.finite(x)
+!is.infinite(x)
+
+# 2. dplyr::near() compares if two vectors of floating point numbers are (pairwise) equal. This is safer than using ==, because it has a built in tolerance. It taks abs(x - y) < tol
+
+dplyr::near
+
+# 3. A logical vector can take three values. An integer vector is restricted to about +/-2*10^9. A double vector can take The double can take numbers in the range of about  ±2×10^308 values. 
+
+# 4. as.integer() allows you to convert from double to integer.
+
+x <- c(4, 5, 6)
+x2 <- as.integer(x)
+is.double(x2)
+
+# 5. The parse() function allow you to convert a string into a logical, integer, and double vector.
+
+parse_logical(c("true", "false"))
+parse_integer(c("1", "2", "3"))
+parse_double(c("1.56", "2.34", "3.56"))
+```
+
+## Using atomic vectors
+
+```{r}
+x <- sample(20,100, replace = TRUE)
+x
+y <- x > 10
+sum(y)
+mean(y)
+is_integer(x)
+is_double(x)
+is_character(x)
+
+typeof(1)
+
+typeof(1L)
+
+typeof("Mets")
+
+typeof(c(1986, "Mets"))
+```
+
+
+## Exercises
+```{r}
+# 1. mean(is.na(x)) calculates the proportion of values with NA in the vector. sum(!is.finite(x)) sums the number of NA values in the vector.
+x <- c(1,2,3,4)
+x2 <- c(1,2,NA,4)
+x3 <- c(1,2,NA,NA)
+
+mean(is.na(x))
+mean(is.na(x2))
+
+sum(!is.finite(x))
+sum(!is.finite(x2))
+sum(!is.finite(x3))
+
+# 2. is.vector() returns TRUE if x is a vector of the specified mode having no attributes other than names. is.atomic() returns TRUE if x is of an atomic type (or NULL) and FALSE otherwise. The function is.atomic() explicitly checks whether an object is one of the atomic types (“logical”, “integer”, “numeric”, “complex”, “character”, and “raw”) or NULL.
+?is.vector
+?is.atomic
+
+# 3.setNames() sets the names on an object and returns the object. purrr::set_names() has more features.
+?setNames
+?purrr::set_names
+
+setNames(1:4, c("a", "b", "c", "d"))
+purrr::set_names(1:4, "a", "b", "c", "d")
+
+# Some examples of more arguments in purrr::set_names()
+purrr::set_names(c(a = 1, b = 2, c = 3, d = 4), ~ toupper(.))
+purrr::set_names(c(A = 1, B = 2, C = 3, D = 4), ~ tolower(.))
+
+# 4.
+# 4.1
+x <- c(1,9,8,6)
+x[length(x)]
+
+# 4.2
+x[seq_along(x) %% 2 == 0]
+
+# 4.3
+x[1:length(x)-1]
+
+# 4.4
+x <- c(1,9,8,6, NA, NA)
+
+x[!is.infinite(x) & !is.nan(x) & (x %% 2 == 0)]
+
+# 5.The following expressions treat missing values differently.
+x[x <= 0]
+x[-which(x > 0)]
+
+# 6. If we subset a vector by an integer larger than its length, it returns a vector of missing values.
+x <- c(a = 10, b = 20)
+x
+x[3]
+# When [ is provided names not in the vector’s names, it will return NA for those elements.
+x["c"]
+```
+
+
+# Exercises
+
+```{r}
+# 1. Draw the lists as nested sets.
+
+# 2. 
+
+x <- tibble(x = c(4,5,6), y = c(6,5,4)) 
+x[["x"]]
+x["x"]
+
+# x[["x"]] returns a vector 
+# x["x"] returns a tibble
+```
+
+# Exercises
+```{r}
+# 1. 
+hms::hms(3600)
+attributes(hms::hms(3600))
+
+# 2. 
+x2 <- tibble(x = c(4,5,6), y = c(6,5)) 
+x2
+# If you make a tibble with different column lengths, it warns you that tibble columns must have consistent lengths.
+
+# 3. 
+tibble(x = 1:3, y = list("a", 1, list(1:3)))
+```
+
+
+
