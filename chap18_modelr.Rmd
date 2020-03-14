@@ -1,0 +1,280 @@
+---
+title: "Chapter 18 modelr"
+author: "Matt Russell"
+date: "1/19/2020"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+library(modelr)
+```
+
+```{r}
+ggplot(sim1, aes(x, y))+
+  geom_point()
+
+model1 <- function(a, data){
+  a[1] + data$x * a[2]
+}
+model1(c(7, 1.5),sim1)
+```
+
+
+# Exercises
+```{r}
+# 1. The model changes depending on the dataset during each simulation with varying slope. 
+
+sim1a <- tibble(
+  x = rep(1:10, each = 3),
+  y = x * 1.5 + 6 + rt(length(x), df = 2)
+)
+sim1a
+
+ggplot(sim1a, aes(x, y))+
+  geom_point()
+
+model1 <- function(a, data){
+  a[1] + data$x * a[2]
+}
+
+mod1a <- lm(y ~ x, data = sim1a)
+coef(mod1a)
+
+ggplot(sim1a, aes(x, y))+
+  geom_point()+
+  geom_abline(intercept = mod1a$coef[1], slope = mod1a$coef[2])
+
+ # 2.After using the mean absolute difference for the linear model, the coefficients from optim() are slightlight different from those obtained from the lm() model.
+
+measure_distance <- function(mod, data) {
+  diff <- data$y - model1(mod, data)
+  mean(abs(diff))
+}
+
+best <- optim(c(0, 0), measure_distance, data = sim1a)
+coef(mod1a)
+best$par
+
+ # 3. Locally, a three-parameter model can be optimized, but not globally. It depends on the starting points. 
+
+model1 <- function(a, data) {
+  a[1] + data$x * a[2] + a[3]
+}
+```
+
+# Exercises
+```{r}
+# 1. It looks like loess() (from the model fit) and geom_smooth() (from ggplot())
+grid <- sim1 %>% 
+  data_grid(x) 
+grid
+
+sim1_mod <- lm(y ~ x, data = sim1)
+coef(sim1_mod)
+
+grid <- grid %>% 
+  add_predictions(sim1_mod) 
+grid
+
+ggplot(sim1, aes(x)) +
+  geom_point(aes(y = y)) +
+  geom_line(aes(y = pred), data = grid, colour = "red", size = 1)
+
+
+sim1_mod <- lm(y ~ x, data = sim1)
+
+sim1_mod2 <- loess(y ~ x, data = sim1)
+
+grid <- grid %>% 
+  add_predictions(sim1_mod) 
+grid
+
+grid2 <- grid %>% 
+  add_predictions(sim1_mod2) 
+grid
+
+ggplot(sim1, aes(x)) +
+  geom_point(aes(y = y)) +
+  geom_line(aes(y = pred), data = grid, colour = "red", size = 1)+
+  ggtitle("LM")
+
+ggplot(sim1, aes(x)) +
+  geom_point(aes(y = y)) +
+  geom_line(aes(y = pred), data = grid2, colour = "red", size = 1)+
+  ggtitle("LOESS")
+
+ggplot(sim1, aes(x, y)) +
+  geom_point(aes(y = y)) +
+  geom_smooth()+
+  ggtitle("GEOM_SMOOTH")
+
+ # 2. 
+grid <- sim1 %>% 
+  data_grid(x) 
+grid
+
+# add_predictions() only adds one variable at a time. Have to use var statement to add more then one variable
+grid4 <- grid %>% 
+  add_predictions(sim1_mod, var = "pred_lm") %>% 
+  add_predictions(sim1_mod2, var = "pred_loess") 
+grid4
+
+# gather_predictions formats the data long
+grid5 <- grid %>% 
+  gather_predictions(sim1_mod, sim1_mod2) 
+grid5
+
+
+# spread_predictions formats the data wide
+grid6 <- grid %>% 
+  spread_predictions(sim1_mod, sim1_mod2) 
+grid6
+
+ # 3. geom_ref_line() adds a reference line to a ggplot graph. It comes from modelr. Residuals should have a mean around 0m so it's useful to use that as a reference line.
+
+?geom_ref_line
+ggplot(sim1, aes(x)) +
+  geom_point(aes(y = y)) +
+  geom_line(aes(y = pred), data = grid2, colour = "red", size = 1)+
+  geom_ref_line(v=5)=
+  ggtitle("LOESS")
+
+
+# 4. You can see the distribution of residuals bery easily when looking at the absolute values of residuals. 
+sim1 <- sim1 %>% 
+  add_residuals(sim1_mod) %>% 
+  mutate(abs_resid = abs(resid))
+sim1
+
+ggplot(sim1, aes(resid))+
+  geom_freqpoly(binwidth=0.5)
+
+ggplot(sim1, aes(abs_resid))+
+  geom_freqpoly(binwidth=0.5)
+```
+
+```{r}
+ggplot(sim3, aes(x1, y, col = x2))+
+  geom_point()
+
+mod1 <- lm(y ~ x1 + x2, data = sim3)
+mod2 <- lm(y ~ x1 * x2, data = sim3)
+
+grid <- sim3 %>% 
+data_grid(x1, x2) %>% 
+  gather_predictions(mod1, mod2) 
+grid
+
+ggplot(sim3, aes(x1, y, col = x2))+
+  geom_point() +
+  geom_line(data = grid, aes(y = pred)) +
+  facet_wrap(~model)
+  
+sim3 <- modelr::sim3
+sim3 <- sim3 %>% 
+  gather_residuals(mod1, mod2)
+grid
+
+ggplot(sim3, aes(x1, resid, col = x2))+
+  geom_point() +
+  facet_grid(model ~ x2)
+
+
+# Interactions (two continuous)
+
+mod1 <- lm(y ~ x1 + x2, data = sim4)
+mod2 <- lm(y ~ x1 * x2, data = sim4)
+
+grid <- sim4 %>% 
+  data_grid(
+    x1 = seq_range(x1, 5),
+    x2 = seq_range(x2, 5)
+  ) %>% 
+  gather_predictions(mod1, mod2)
+grid
+
+ggplot(grid, aes(x1, x2))+
+  geom_tile(aes(fill= pred))+
+  facet_wrap(~model)
+
+ggplot(grid, aes(x1, pred, colour = x2, group = x2)) + 
+  geom_line() +
+  facet_wrap(~ model)
+ggplot(grid, aes(x2, pred, colour = x1, group = x1)) + 
+  geom_line() +
+  facet_wrap(~ model)
+```
+
+# Exercises
+
+```{r}
+# 1. The predictions are the same for the model with and without the intercept.
+ggplot(sim2, aes(x,y))+
+  geom_point()
+
+mod1 <- lm(y ~ x, data = sim2)
+mod2 <- lm(y ~ x -1, data = sim2)
+grid <- sim2 %>% 
+  data_grid(x) %>% 
+  gather_predictions(mod1,mod2)
+grid
+
+ggplot(sim2, aes(x))+
+  geom_point(y = y)+
+  geom_point(
+    data = grid,
+    aes(y = pred),
+    color = "orange",
+    size=3
+  )+
+  facet_wrap(~model)
+
+# 2. The * allows you to specify the interaction and you see how each level of x1 "interacts" with each value of x2
+
+mod2_sim3 <- lm(y ~ x1 * x2, data = sim3)
+model_matrix(sim3, y ~ x1 * x2)
+mod2_sim4 <- lm(y ~ x1 * x2, data = sim4)
+model_matrix(sim4, y ~ x1 * x2)
+
+# 3.
+
+mod1 <- lm(y ~ x1 + x2, data = sim3)
+mod2 <- lm(y ~ x1 * x2, data = sim3)
+
+
+# 4.There are slightly more residuals centered near 0 for mod2, and it has a lower standard deviation of the residuals
+
+mod1 <- lm(y ~ x1 + x2, data = sim4)
+mod2 <- lm(y ~ x1 * x2, data = sim4)
+
+grid <- sim4 %>% 
+  data_grid(
+    x1 = seq_range(x1, 5),
+    x2 = seq_range(x2, 5)
+  ) %>% 
+  gather_predictions(mod1, mod2)
+grid
+
+sim4_mods <- gather_residuals(sim4, mod1, mod2)
+sim4_mods
+
+ggplot(sim4_mods, aes(x1, resid))+
+  geom_point()+
+  facet_wrap(~ model)+
+  stat_smooth()
+
+
+ggplot(sim4_mods, aes(x2, resid))+
+  geom_point()+
+  facet_wrap(~ model)+
+  stat_smooth()
+
+ggplot(sim4_mods, aes(x=resid, color = model))+
+  geom_freqpoly(binwidth = 0.75)
+
+sim4_mods %>%
+  group_by(model) %>%
+  summarize(resid = sd(resid))
+```
+

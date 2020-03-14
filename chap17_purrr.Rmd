@@ -1,0 +1,296 @@
+---
+title: "Chapter 17: Iteration with purr"
+author: "Matt Russell"
+date: "1/18/2020"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+```
+
+```{r}
+df <- tibble(
+  a = rnorm(10),
+  b = rnorm(10),
+  c = rnorm(10),
+  d = rnorm(10)
+)
+df
+
+output <- vector("double", ncol(df))  # 1. output
+for (i in seq_along(df)) {            # 2. sequence
+  output[[i]] <- median(df[[i]])      # 3. body
+}
+
+output
+
+# First line (vestor()) gives it space.
+# Second line tells it what to loop over.
+# Third line does the work calculates median).
+```
+
+# Execises
+```{r}
+# 1a.
+
+mtcars
+
+mean.cars <- vector("double", ncol(mtcars))
+
+for (i in seq_along(mtcars)) {
+  mean.cars[[i]] <- mean(mtcars[[i]])
+}
+mean.cars
+
+# 1b.
+
+myflights <- nycflights13::flights
+
+flights.type <- vector("character", ncol(myflights))
+
+names(flights.type) <- names(myflights)
+
+for (i in names(myflights)) {
+  flights.type[[i]] <- typeof(myflights[[i]])
+}
+flights.type
+
+# 1c.
+iris.unique <- vector("double", ncol(iris))
+
+names(iris.unique) <- names(iris)
+
+for (i in seq_along(iris)) {
+  iris.unique[[i]] <- length(unique(iris[[i]]))
+}
+iris.unique
+
+# 1d.
+mu <- c(-10, 0, 10, 100)
+
+normals <- vector("list", length(mu))
+
+for (i in seq_along(normals)) {
+  normals[[i]] <- rnorm(10, mean = mu[i])
+}
+normals
+
+#2. 
+
+out <- ""
+for (x in letters) {
+  out <- stringr::str_c(out, x)
+}
+out
+str_c(letters, collapse = "")
+
+x <- sample(100)
+sd <- 0
+for (i in seq_along(x)) {
+  sd <- sd + (x[i] - mean(x)) ^ 2
+}
+sd <- sqrt(sd / (length(x) - 1))
+sd
+sd(x)
+
+x <- runif(100)
+out <- vector("numeric", length(x))
+out[1] <- x[1]
+for (i in 2:length(x)) {
+  out[i] <- out[i - 1] + x[i]
+}
+out
+cumsum(x)
+
+# 3. 
+
+bottles <- function(n) {
+  if (n > 1) {
+    str_c(n, " bottles")
+  } else if (n == 1) {
+    "1 bottle"
+  } else {
+    "no more bottles"
+  }
+}
+
+beer_bottles <- function(total_bottles) {
+  # print each lyric
+  for (current_bottles in seq(total_bottles, 0)) {
+    # first line
+    cat(str_to_sentence(str_c(bottles(current_bottles), " of beer on the wall, ", bottles(current_bottles), " of beer.\n")))
+    # second line
+    if (current_bottles > 0) {
+      cat(str_c(
+        "Take one down and pass it around, ", bottles(current_bottles - 1),
+        " of beer on the wall.\n"
+      ))
+    } else {
+      cat(str_c("Go to the store and buy some more, ", bottles(total_bottles), " of beer on the wall.\n"))
+    }
+    cat("\n")
+  }
+}
+beer_bottles(67)
+
+# 4.
+x <- runif(1000)
+output <- vector("integer", 0)
+for (i in seq_along(x)) {
+  output <- c(output, lengths(x[[i]]))
+}
+output
+
+output2 <- vector("integer", length(x))
+for (i in seq_along(x)) {
+  output <- c(output, lengths(x[[i]]))
+}
+output2
+```
+
+
+# Exercises
+
+```{r}
+# 1.
+files <- dir("data/", pattern = "\\.csv$", full.names = TRUE)
+files
+
+df_list <- vector("list", length(files))
+
+for (i in seq_along(files)) {
+  df_list[[i]] <- read_csv(files[[i]])
+}
+
+print(df_list)
+
+df <- bind_rows(df_list)
+df
+
+# 2. 
+x <- c(1, 2, 3)
+print(names(x))
+
+
+for (nm in names(x)) {
+  print(nm)
+  print(x[[nm]])
+}
+
+x <- c(a = 11, 12, c = 13)
+names(x)
+
+# 3.
+show_mean <- function(df, digits = 2) {
+  # Get max length of all variable names in the dataset
+  maxstr <- max(str_length(names(df)))
+  for (nm in names(df)) {
+    if (is.numeric(df[[nm]])) {
+      cat(
+        str_c(str_pad(str_c(nm, ":"), maxstr + 1L, side = "right"),
+          format(mean(df[[nm]]), digits = digits, nsmall = digits),
+          sep = " "
+        ),
+        "\n"
+      )
+    }
+  }
+}
+show_mean(iris)
+
+# 4. 
+trans <- list(
+  disp = function(x) x * 0.0163871,
+  am = function(x) {
+    factor(x, labels = c("auto", "manual"))
+  }
+)
+for (var in names(trans)) {
+  mtcars[[var]] <- trans[[var]](mtcars[[var]])
+}
+
+```
+
+# Exercises
+```{r}
+# 1.
+?apply
+# Returns a vector or array or list of values obtained by applying a function to margins of an array or matrix. For an object with two-dimensions, such as a matrix or data frame, apply() replaces looping over the rows or columns of a matrix or data-frame. 
+
+# 2.
+col_summary <- function(df, fun) {
+  out <- vector("double", length(df))
+  for (i in seq_along(df)) {
+    out[i] <- fun(df[[i]])
+  }
+  out
+}
+```
+ 
+# Exercises
+
+```{r}
+# 1.
+map_dbl(mtcars,mean)
+
+map_chr(nycflights13::flights, typeof)
+
+map_int(iris, function(x) length(unique(x)))
+
+map(c(-10, 0, 10, 100), ~ rnorm(n = 10, mean = .))
+
+ # 2.
+map_lgl(diamonds, is.factor)
+
+# 3. 
+map(c(TRUE, FALSE, TRUE), ~ !.)
+
+# 4.
+map(-2:2, rnorm, n = 5)
+map_dbl(-2:2, rnorm, n = 5)
+
+# 5. 
+x <- split(mtcars, mtcars$cyl)
+map(x, function(df) lm(mpg ~ wt, data = df))
+
+my.map<-map(x, ~ lm(mpg ~ wt, data = .))
+```
+
+# Exercises
+```{r}
+
+every2 <- function(.x, .p, ...) {
+  for (i in .x) {
+    if (!.p(i, ...)) {
+      # If any is FALSE we know not all of then were TRUE
+      return(FALSE)
+    }
+  }
+  # if nothing was FALSE, then it is TRUE
+  TRUE
+}
+
+every2(1:3, function(x) {
+  x > 1
+})
+
+every2(1:3, function(x) {
+  x > 0
+})
+
+# 2. 
+col_sum2 <- function(df, f, ...) {
+  map(keep(df, is.numeric), f, ...)
+}
+col_sum2(mtcars, mean)
+
+ # 3. The cause is due to sapply().
+```
+
+
+ 
+
+
+
+
