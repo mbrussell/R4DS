@@ -1,0 +1,217 @@
+---
+title: "Chapter 19 purrr broom"
+author: "Matt Russell"
+date: "3/19/2020"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+library(modelr)
+library(gapminder)
+```
+
+```{r}
+gapminder
+
+gapminder %>% 
+  ggplot(aes(year, lifeExp, group = country)) +
+  geom_line(alpha = 1/3)
+
+```
+
+```{r}
+usa <- filter(gapminder, country == "United States")
+usa
+
+usa %>% 
+  ggplot(aes(year, lifeExp)) +
+  geom_line() +
+  ggtitle("Full data")
+
+usa_mod <- lm(lifeExp ~ year, data=usa)
+usa %>% 
+  add_predictions(usa_mod) %>% 
+  ggplot(aes(year, pred)) +
+  geom_line() +
+  ggtitle("Linear regression")
+  
+usa %>% 
+  add_residuals(usa_mod) %>% 
+  ggplot(aes(year, resid)) +
+  geom_hline(yintercept = 0, color = "white", size = 3) +
+  geom_line() +
+  ggtitle("Remaining pattern")
+
+```
+
+```{r}
+by_country <- gapminder %>% 
+  group_by(country, continent) %>% 
+  nest()
+
+by_country
+
+by_country$data[[3]]
+```
+
+```{r}
+country_model <- function(df){
+  lm(lifeExp ~ year, data = df)
+}
+
+models <- map(by_country$data, country_model)
+
+by_country <- by_country %>% 
+  mutate(model = map(data, country_model))
+by_country
+
+by_country %>% 
+  filter(continent == "Europe")
+
+by_country %>% 
+  arrange(continent, country)
+
+by_country <- by_country %>% 
+  mutate(resids = map2(data, model, add_residuals))
+by_country
+
+resids <- unnest(by_country, resids)
+resids
+
+resids %>% 
+  ggplot(aes(year, resid)) +
+  geom_line(aes(group = country), alpha = 1/3) +
+  geom_smooth(se = F)
+
+
+resids %>% 
+  ggplot(aes(year, resid)) +
+  geom_line(aes(group = country), alpha = 1/3) +
+  geom_smooth(se = F) +
+  facet_wrap(~continent)
+```
+
+```{r}
+broom::glance(usa_mod)
+
+by_country %>% 
+  mutate(glance = map(model, broom::glance)) %>% 
+  unnest(glance)
+
+glance <- by_country %>% 
+  mutate(glance = map(model, broom::glance)) %>% 
+  unnest(glance, .drop = T)
+
+glance %>% 
+  arrange(r.squared)
+
+glance %>% 
+  ggplot(aes(continent, r.squared)) +
+  geom_jitter(width = 0.5)
+
+bad_fit <- filter(glance, r.squared <= 0.25)
+
+gapminder %>% 
+  semi_join(bad_fit, by = "country") %>% 
+  ggplot(aes(year, lifeExp, col = country))+
+  geom_line()
+```
+
+# Exercises
+```{r}
+#1. 
+lifeExp ~ poly(year, 2)
+
+country_model <- function(df) {
+  lm(lifeExp ~ poly(year - median(year), 2), data = df)
+}
+
+by_country <- gapminder %>%
+  group_by(country, continent) %>%
+  nest()
+
+by_country <- by_country %>%
+  mutate(model = map(data, country_model))
+by_country <- by_country %>%
+  mutate(
+    resids = map2(data, model, add_residuals)
+  )
+by_country
+
+unnest(by_country, resids) %>%
+  ggplot(aes(year, resid)) +
+  geom_line(aes(group = country), alpha = 1 / 3) +
+  geom_smooth(se = FALSE)
+
+by_country %>%
+  mutate(glance = map(model, broom::glance)) %>%
+  unnest(glance, .drop = TRUE) %>%
+  ggplot(aes(continent, r.squared)) +
+  geom_jitter(width = 0.5)
+
+# 2.
+# install.packages(("ggbeeswarm"))
+library(ggbeeswarm)
+
+by_country %>%
+  mutate(glance = map(model, broom::glance)) %>%
+  unnest(glance, .drop = TRUE) %>%
+  ggplot(aes(continent, r.squared)) +
+  geom_beeswarm()
+
+
+# 3. 
+
+gapminder %>%
+  group_by(country, continent) %>%
+  nest() %>%
+  mutate(model = map(data, ~ lm(lifeExp ~ year, .))) %>%
+  mutate(glance = map(model, broom::glance)) %>%
+  unnest(glance) %>%
+  unnest(data) %>%
+  filter(r.squared < 0.25) %>%
+  ggplot(aes(year, lifeExp)) +
+  geom_line(aes(color = country))
+```
+
+# Exercises
+```{r}
+#1. Functions that take a atomic vector and return a list: map() and str_split
+
+#2. Summary functions that return multiple values: range(), fivenum()
+
+#3. We don't know the values for quantile.
+
+mtcars %>%
+  group_by(cyl) %>%
+  summarise(q = list(quantile(mpg))) %>%
+  unnest()
+
+mtcars %>%
+  group_by(cyl) %>%
+  summarise(q = list(fivenum(mpg))) %>%
+  unnest()
+
+quantile(mtcars$mpg)
+fivenum(mtcars$mpg)
+
+#4. The code creates a tibble with values for each observation.
+mtcars %>%
+  group_by(cyl) %>%
+  summarise_each(funs(list))
+```
+
+# Exercises
+```{r}
+#1. lengths() returns the length of elements in a list. Could use it to test if lengths within a list are the same or different.
+
+#2. Common types of vectors in data frames are: logical, numeric, integer, and character.
+
+```
+
+
+
+
+
+
