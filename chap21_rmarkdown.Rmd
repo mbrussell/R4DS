@@ -1,0 +1,40 @@
+---
+title: "Chapter 21 R Markdown"
+author: "Matt Russell"
+date: "3/24/2020"
+output: html_document
+---
+
+Change to global options in a code chunk for the rest of the document:
+
+```{r}
+knitr::opts_chunk$set(
+  echo = F
+)
+```
+
+
+The difference between an R Notebook and R Markdown document is [explained well here](http://uc-r.github.io/r_notebook). With an R Notebook, you can visually assess the output as you develop your R Markdown document without having to knit the entire document to see the output. Mostly everything else appears the same.
+
+Think about naming code chunks, like below:
+
+```{r myChunk}
+# I named the RMarkdown chunk.
+```
+
+```{r}
+mtcars[1:5, 1:8]
+
+knitr::kable(
+  mtcars[1:5,],
+  caption = "A knitr table."
+)
+```
+
+The mean of the mpg in the mtcars data set is `r round(mean(mtcars$mpg), 1)` miles per gallon.
+
+You can add an EndNote bibliography to the an R Markdown document.
+
+See Jenny Bryan's book [Happy Git with R](https://happygitwithr.com/) for more resources.
+
+

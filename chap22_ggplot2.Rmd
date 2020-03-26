@@ -1,0 +1,12 @@
+---
+title: "Chap 22 ggplot"
+author: "Matt Russell"
+date: "3/24/2020"
+output: html_document
+---
+
+# ggplot tips and tricks  
+* You can change the legend title in `labs()` by specifying `color = "My new legend title."`
+* You can add statistical notation in axes/titles
+* `scale_x_log10` and `scale_y_log10` allow you to plot values in their log-transformed units
+* Figure sizes can be set within R Markdown code chunks, e.g., `fig.width = 6` and `fig.asp = 0.618` (the golden ratio). 
